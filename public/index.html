@@ -112,12 +112,36 @@
         border: 1px solid #fecaca;
         white-space: pre-wrap;
       }
+      .err-help {
+        margin-top: 0.5rem;
+        padding: 0.65rem 0.7rem;
+        border-radius: 8px;
+        font-size: 0.8125rem;
+        background: #f0f9ff;
+        color: #1e3a5f;
+        border: 1px solid #bae6fd;
+        line-height: 1.45;
+      }
+      .err-help code {
+        font-size: 0.76rem;
+        display: block;
+        margin-top: 0.35rem;
+        padding: 0.45rem 0.5rem;
+        background: #e0f2fe;
+        border-radius: 6px;
+        word-break: break-all;
+        white-space: pre-wrap;
+      }
     </style>
   </head>
   <body>
     <div class="card">
       <h1>Download page as PDF</h1>
-      <p class="sub">Paste a <strong>public</strong> page link (https), then download the PDF. Keep this tab open while it runs.</p>
+      <p class="sub">
+        Paste a <strong>public</strong> page link (https), then download the PDF. Keep this tab open while it runs. Some sites
+        (e.g. behind Cloudflare on <em>katinamagazine.org</em>) block cloud servers — use the
+        <strong>desktop command</strong> below for those pages.
+      </p>
       <form id="f" class="row">
         <div>
           <label for="url">Public URL</label>
@@ -139,6 +163,7 @@
         </div>
       </form>
       <div id="e" class="err" hidden></div>
+      <div id="ehelp" class="err-help" hidden></div>
     </div>
     <script>
       function parseFilename(contentDisposition) {
@@ -176,11 +201,53 @@
       const inp = document.getElementById("url");
       const btn = document.getElementById("go");
       const err = document.getElementById("e");
+      const ehelp = document.getElementById("ehelp");
       const st = document.getElementById("st");
+
+      function showError(msg) {
+        err.textContent = msg;
+        err.hidden = false;
+        const blocked =
+          /bot check|cloudflare|SITE_BLOCKED/i.test(msg) || msg.includes("hosted server");
+        ehelp.textContent = "";
+        if (!blocked) {
+          ehelp.hidden = true;
+          return;
+        }
+        ehelp.hidden = false;
+
+        const lead = document.createElement("p");
+        lead.style.marginTop = "0";
+        lead.appendChild(document.createTextNode(
+          "This site checks for automated browsers from cloud datacenters. "
+        ));
+        const s = document.createElement("strong");
+        s.textContent = "Fix: run the exporter on your computer";
+        lead.appendChild(s);
+        lead.appendChild(document.createTextNode(
+          " (a real Chromium window finishes the check once)."
+        ));
+
+        const p2 = document.createElement("p");
+        p2.textContent = "In the pdf-app folder on your PC:";
+        const cmds = document.createElement("code");
+        cmds.textContent = "npm install\nnpx playwright install chromium\nnpm run pdf:headed";
+        cmds.title = "Then paste your URL when the terminal prompts you.";
+
+        const p3 = document.createElement("p");
+        p3.textContent = "Or, if Chromium is already installed:";
+        const c3 = document.createElement("code");
+        const u = inp.value.trim() || "https://example.com/your-page";
+        c3.textContent = 'npm run pdf -- "' + u.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '" --headed';
+
+        ehelp.append(lead, p2, cmds, p3, c3);
+      }
 
       form.addEventListener("submit", async (ev) => {
         ev.preventDefault();
         err.hidden = true;
+        ehelp.hidden = true;
+        ehelp.textContent = "";
         st.textContent = "";
         st.classList.remove("working");
         const url = inp.value.trim();
@@ -214,8 +281,7 @@
         } catch (ex) {
           st.classList.remove("working");
           st.textContent = "";
-          err.textContent = String(ex.message || ex);
-          err.hidden = false;
+          showError(String(ex.message || ex));
         } finally {
           btn.disabled = false;
         }
