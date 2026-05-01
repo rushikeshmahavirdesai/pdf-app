@@ -1,0 +1,7 @@
+# Default list (editable). Deploy as static: this file sits next to index.html.
+
+https://katinamagazine.org/content/article/future-of-work/2026/what-are-libraries-actually-doing-about-the-sdgs
+https://katinamagazine.org/content/article/open-knowledge/2025/open-access-collections-publishing-integrity-crisis
+https://katinamagazine.org/content/article/open-knowledge/2026/resource-targets-professionals-may-have-broader-appeal
+https://katinamagazine.org/content/article/open-knowledge/2025/route-to-open-scholarly-ecosystem-through-cc-by
+https://katinamagazine.org/content/article/resource-reviews/2025/needed-article-yesterday-article-galaxy-delivers

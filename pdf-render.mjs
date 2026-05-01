@@ -1,11 +1,15 @@
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
+/**
+ * Primary control for printable PDF layout: magazine chrome, rails, CTAs → display:none @media print.
+ * JS below only trims comments/sidebars/copy-right tail where CSS cannot reach cleanly.
+ */
 export const printCss = `
 @media print {
   @page {
     size: A4;
-    margin: 16mm 14mm 18mm 14mm;
+    margin: 14mm 12mm 24mm 12mm;
   }
 
   html, body {
@@ -13,52 +17,149 @@ export const printCss = `
     color: #000 !important;
   }
 
-  /* Remove only clear non-article utility UI. */
+  /* ---- Site chrome ---- */
+  .masthead,
+  .site-header,
+  .site-nav,
+  .global-header,
+  .navigation,
+  #site-navigation,
+  .mega-menu,
+  .mobile-nav,
+  .burger,
+  .menu-toggle,
+
+  /* Sitewide footers & legal ribbons */
   footer,
+  body > footer,
+  .site-footer,
+  .site-footer-simple,
   [role="contentinfo"],
+  .footer-nav,
+  .global-footer,
+  .breadcrumb,
+  nav[aria-label*="breadcrumb" i],
+  nav[aria-label*="Breadcrumb" i],
+  .post-meta-nav,
+  .post-navigation-prev-next,
+
+  /* ---- Share strips (top, inline, sticky) ---- */
   .share,
+  .sharing,
   .share-bar,
   .sharebar,
+  .share-buttons,
+  .share-icons,
+  .sharing-buttons,
+  .social-share-buttons,
+  .article-share-bar,
+  .article-share-tools,
+  .article-share-top,
+  .article-share-inline,
   .sticky-share,
   .floating-share,
-  .social-share,
-  .article-share,
-  .share-tools,
+  .floating-social,
+  .post-share-bar,
+  .entry-share,
+  .print-button,
+  [class*="share-bar" i],
+  [class*="share-btn" i],
+  [class*="ShareButton" i],
+  [class*="SharingToolbar" i],
+  [class*="sharing-toolbar" i],
+  [class*="social-toolbar" i],
+  [data-module*="sharing" i],
+  [data-module*="breadcrumb" i],
+  [data-component*="Share" i],
+  [data-component*="share" i],
+  [aria-label*="share" i],
+  [aria-label*="Share article" i],
+  [aria-label*="social media" i],
+  iframe[src*="facebook.com/plugins/share"],
+  iframe[src*="platform.twitter"],
+
   .addthis_toolbox,
   .addthis-smartlayers,
+
+  /* ---- Article bottom actions / pagination ---- */
   .article-actions,
   .article-buttons,
-  .button-group,
+  .bottom-share,
+  .entry-footer-buttons,
   .article-bottom-buttons,
+  .post-footer-buttons,
+  .below-article,
+  .after-post,
   .article-cta,
-  .site-footer,
-  .global-footer,
-  .newsletter-signup,
-  .join-our-community,
-  [aria-label*="share" i],
-  [aria-label*="social" i],
-  [aria-label*="footer" i],
-  [class*="share" i][class*="bar" i],
-  [class*="share" i][class*="sticky" i],
-  [class*="share" i][class*="float" i],
-  [class*="article" i][class*="button" i],
-  [class*="article" i][class*="action" i],
-  [class*="footer" i],
-  [class*="share-bar" i],
-  [class*="social-share" i],
+  .pagination,
+  .pager,
+  .article-post-navigation,
 
-  /* Comments (Disqus etc.) — also stripped in DOM before PDF */
+  /* ---- Newsletter / community / signup blocks ---- */
+  .newsletter,
+  .newsletter-signup,
+  .newsletter-widget,
+  .join-our-community,
+  .signup-section,
+  [class*="signup-form" i],
+  [class*="elementor-form" i],
+  [class*="wpforms" i],
+  [class*="gform_" i],
+  iframe[src*="hsforms"],
+  iframe[src*="hubspot"],
+  [class*="signup-box" i],
+
+  /* ---- Comments ---- */
   #disqus_thread,
   [id*="disqus" i],
+  #comments,
+  #respond,
+  #commentform,
+  .comment-form,
+  .comment-form-wrap,
+  .comments-area,
+  .comments-section,
+  .comment-section,
+  .comment-list,
+  .comment-respond,
+  .discussion-section,
+  .comments-wrapper,
+  [class*="disqus-thread" i],
+  [class*="comments-area" i],
   iframe[src*="disqus"],
-  iframe[src*="disquscdn"] {
-    display: none !important;
-  }
+  iframe[src*="disquscdn"],
 
-  /* Hide sticky utility controls that can overlay content in print. */
+  /* ---- “You may also like” rails & widgets (outside nested article internals) ---- */
+  #secondary,
+  #sidebar,
+  aside[class*="rail" i],
+  aside[class*="Rail" i],
+  aside[role="complementary"]:not(article aside),
+  aside[class*="sidebar" i]:not(article aside),
+  aside[class*="related" i]:not(article aside),
+  aside[class*="Related" i]:not(article aside),
+  [class*="recommended-rail" i],
+  [class*="article-recommendations" i],
+  [class*="you-might-like" i],
+  [class*="you-may-like" i],
+  [class*="read-next" i],
+  [class*="more-stories" i],
+  [class*="related-posts" i],
+  [data-zone*="recommended" i],
+
+  /* Sticky overlays that fight print layout */
   [style*="position: fixed"],
   [style*="position:fixed"] {
     display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Let article use full printable width once columns are stripped */
+  main,
+  article,
+  article * {
+    max-width: none !important;
+    box-sizing: border-box;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -154,7 +255,11 @@ export async function renderUrlToPdfBuffer(page, url, opts = {}) {
     window.scrollTo(0, 0);
   });
 
-  await page.waitForLoadState("networkidle", { timeout: 120000 });
+  try {
+    await page.waitForLoadState("networkidle", { timeout: 45000 });
+  } catch {
+    await page.waitForLoadState("load").catch(() => {});
+  }
   await page.evaluate(async () => {
     const images = Array.from(document.images);
     await Promise.all(
@@ -178,47 +283,89 @@ export async function renderUrlToPdfBuffer(page, url, opts = {}) {
   await page.waitForTimeout(1000);
 
   await page.evaluate(() => {
+    const RELATED_BLOCK_RE =
+      /^\s*(you may also like|you might also like|recommended for you|more from\b|recommended reading|read next|related articles|more stories|recommended stories|popular on katina)/i;
+
+    /** Remove sibling sidebars (#secondary, complementary asides outside article column). */
+    const articleProbe = document.querySelector("article");
+    const removeOutsideArticleRails = () => {
+      document.querySelectorAll("#secondary, #sidebar").forEach((node) => {
+        node.remove();
+      });
+
+      document
+        .querySelectorAll(
+          'aside[role="complementary"], aside.sidebar, aside[class*="related" i]'
+        )
+        .forEach((aside) => {
+          if (!articleProbe) {
+            aside.remove();
+            return;
+          }
+          if (aside.contains(articleProbe)) return;
+          aside.remove();
+        });
+
+      const parent = articleProbe?.parentElement;
+      if (parent) {
+        for (const child of [...parent.children]) {
+          if (child.tagName === "ASIDE" && articleProbe && !child.contains(articleProbe)) child.remove();
+        }
+      }
+    };
+
+    removeOutsideArticleRails();
+
     const removeSelectors = [
       "#disqus_thread",
       '[id*="disqus" i]',
       'iframe[src*="disqus"]',
       'iframe[src*="disquscdn"]',
       "#comments",
+      "#respond",
+      "#commentform",
+      ".comment-form",
       ".comments-area",
       ".comment-section",
-      '[class*="disqus-thread" i]',
-      '[class*="comment-thread" i]'
+      ".comment-form-wrap",
+      ".comment-respond",
+      ".comments-wrapper",
+      '[class*="discussion" i][class*="thread" i]',
+      '[data-module*="comments" i]'
     ];
 
     removeSelectors.forEach((sel) => {
       document.querySelectorAll(sel).forEach((n) => n.remove());
     });
 
-    document.querySelectorAll("h1, h2, h3, h4").forEach((h) => {
-      if (
-        !/you may also like|you might also like|recommended for you|more from\b/i.test(
-          (h.textContent || "").trim()
-        )
-      ) {
-        return;
-      }
+    /** “You may also like” / recommendation blocks by heading — left rail & in-flow modules. */
+    document.querySelectorAll("h2, h3, h4, h5").forEach((h) => {
+      const trimmed = (h.textContent || "").replace(/\s+/g, " ").trim();
+      if (!RELATED_BLOCK_RE.test(trimmed)) return;
       const kill =
         h.closest("aside") ||
+        h.closest('[class*="rail" i]') ||
         h.closest('[class*="sidebar" i]') ||
-        h.closest('[class*="related" i]') ||
+        h.closest('[class*="related-post" i]') ||
+        h.closest('[class*="recommendations" i]') ||
         h.closest('[role="complementary"]') ||
+        h.closest('[class*="grid" i]') ||
         h.closest("section");
       kill?.remove();
     });
 
-    const articleRoot = document.querySelector("article");
     document.querySelectorAll("aside").forEach((aside) => {
-      if (articleRoot && !articleRoot.contains(aside)) aside.remove();
+      if (articleProbe && !articleProbe.contains(aside)) aside.remove();
     });
 
     document.querySelectorAll("h2, h3, h4").forEach((h) => {
       const t = (h.textContent || "").replace(/\s+/g, " ").trim();
-      if (!/join our community|weekly newsletter|newsletter signup|subscribe to the katina/i.test(t)) return;
+      if (
+        !/join our community|weekly newsletter|newsletter signup|subscribe to\s*the\s*katina|subscribe to\s*katina|get our newsletter|stay connected|email updates|keep up with katina/i.test(
+          t
+        )
+      )
+        return;
       let el = h;
       let removed = false;
       for (let d = 0; d < 15 && el; d++, el = el.parentElement) {
@@ -239,17 +386,24 @@ export async function renderUrlToPdfBuffer(page, url, opts = {}) {
       }
     });
 
+    /** End article at last copyright paragraph (keep © line; strip everything after in flow). */
     const root =
       document.querySelector("article") ||
       document.querySelector('[role="main"]') ||
       document.querySelector("main");
     if (!root) return;
 
+    const COPYRIGHT_RE =
+      /\u00a9|\(\s*c\s*\)|\bcopyright\b|all\s+rights\s+reserved|first\s+published|permissions\s+contact/i;
+
     const candidates = [];
-    for (const el of root.querySelectorAll("p, small")) {
+    for (const el of root.querySelectorAll("p, small, footer")) {
+      if (!root.contains(el)) continue;
       const txt = el.textContent.replace(/\s+/g, " ").trim();
-      if (txt.length < 12 || txt.length > 900) continue;
-      if (/©|\bcopyright\b|all rights reserved/i.test(txt)) candidates.push(el);
+      if (txt.length < 12 || txt.length > 1200) continue;
+      if (!COPYRIGHT_RE.test(txt)) continue;
+      if (/you may also|newsletter|subscribe|share this|cookie policy/i.test(txt)) continue;
+      candidates.push(el);
     }
     if (!candidates.length) return;
 
@@ -260,11 +414,13 @@ export async function renderUrlToPdfBuffer(page, url, opts = {}) {
       if (pos & Node.DOCUMENT_POSITION_FOLLOWING) copyrightEl = other;
     }
 
-    let cur = copyrightEl;
-    while (cur && root.contains(cur)) {
-      while (cur.nextSibling) cur.nextSibling.remove();
-      if (cur === root) break;
-      cur = cur.parentElement;
+    /** Walk up from deepest copyright-containing block to remove trailing siblings. */
+    let block = copyrightEl;
+    while (block && root.contains(block) && block.nodeType === Node.ELEMENT_NODE) {
+      while (block.nextSibling) block.nextSibling.remove();
+      if (block === root) break;
+      block = block.parentElement ?? null;
+      if (!(block && root.contains(block))) break;
     }
   });
 
@@ -277,11 +433,11 @@ export async function renderUrlToPdfBuffer(page, url, opts = {}) {
     displayHeaderFooter: true,
     headerTemplate: `<div></div>`,
     footerTemplate: `
-      <div style="width:100%; font-size:9px; color:#444; padding:0 12mm; text-align:right;">
-        <span class="pageNumber"></span> / <span class="totalPages"></span>
+      <div style="width:100%; font-size:10px; font-family:system-ui,sans-serif; color:#222; padding:0 16mm 2mm 16mm; text-align:center;">
+        <span style="margin-right:1em">Page</span><span class="pageNumber"></span><span style="margin:0 0.35em">/</span><span class="totalPages"></span>
       </div>
     `,
-    margin: { top: "16mm", right: "14mm", bottom: "18mm", left: "14mm" }
+    margin: { top: "14mm", right: "12mm", bottom: "22mm", left: "12mm" }
   };
 
   /** @type {Buffer} */

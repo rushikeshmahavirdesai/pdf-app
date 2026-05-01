@@ -9,6 +9,9 @@ import { pathnameToPdfNameSafe, assertAllowedFetchUrl } from "./url-guard.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
+/** Set `PDF_HEADED=1` (or run `npm run start:headed`) so Chromium shows a window — needed for Katina / Cloudflare locally. */
+const PDF_HEADLESS = process.env.PDF_HEADED !== "1";
+const PDF_RENDER_MODE = process.env.PDF_HEADED === "1" ? "cli-headed" : "server";
 const IDLE_CLOSE_MS = 15 * 60 * 1000;
 
 let browserInstance = null;
@@ -32,7 +35,7 @@ function scheduleIdleClose() {
 async function getBrowser() {
   if (!browserInstance) {
     browserInstance = await chromium.launch({
-      headless: true,
+      headless: PDF_HEADLESS,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
     });
   }
@@ -70,6 +73,14 @@ function normalizedPath(pathnameRaw) {
   return trimmed;
 }
 
+/** Whitelisted filenames under ./public — same files as Static Site publishing. */
+const PUBLIC_ASSETS = new Map([
+  ["katina-urls.txt", "text/plain; charset=utf-8"],
+  ["article-print-reference.css", "text/css; charset=utf-8"],
+  ["styles.css", "text/css; charset=utf-8"],
+  ["app.js", "application/javascript; charset=utf-8"]
+]);
+
 const server = http.createServer(async (req, res) => {
   const host = req.headers.host ?? `localhost:${PORT}`;
   const base = `http://${host}`;
@@ -95,6 +106,14 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET") {
+    const leaf = pathname.startsWith("/") ? pathname.slice(1) : pathname;
+    if (leaf && !leaf.includes("/") && PUBLIC_ASSETS.has(leaf)) {
+      await serveStatic(res, path.join("public", leaf), PUBLIC_ASSETS.get(leaf));
+      return;
+    }
+  }
+
   if (req.method === "GET" && pathname === "/api/pdf") {
     const rawUrl = u.searchParams.get("url")?.trim() ?? "";
     let safe;
@@ -112,7 +131,7 @@ const server = http.createServer(async (req, res) => {
       const browser = await getBrowser();
       context = await browser.newContext({ ignoreHTTPSErrors: true });
       const page = await context.newPage();
-      const buf = await renderUrlToPdfBuffer(page, safe, { mode: "server" });
+      const buf = await renderUrlToPdfBuffer(page, safe, { mode: PDF_RENDER_MODE });
       res.writeHead(200, {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${filename}"`,
@@ -161,7 +180,7 @@ const server = http.createServer(async (req, res) => {
       const browser = await getBrowser();
       context = await browser.newContext({ ignoreHTTPSErrors: true });
       const page = await context.newPage();
-      const buf = await renderUrlToPdfBuffer(page, safe, { mode: "server" });
+      const buf = await renderUrlToPdfBuffer(page, safe, { mode: PDF_RENDER_MODE });
       res.writeHead(200, {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${filename}"`,
@@ -201,5 +220,11 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`PDF server listening on http://localhost:${PORT}`);
+  const url = `http://localhost:${PORT}`;
+  console.log(`PDF server → ${url}`);
+  console.log(
+    PDF_HEADLESS
+      ? "Headless mode. For Katina Magazine: run `npm run start:headed`, open Chromium when asked, finish the bot check once, then use the web page."
+      : "Headed mode (visible browser). Keep the Chromium window reachable for Cloudflare prompts."
+  );
 });

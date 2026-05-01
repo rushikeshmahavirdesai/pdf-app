@@ -6,8 +6,11 @@
   "scripts": {
     "pdf": "node generate-katina-pdf.mjs",
     "pdf:headed": "node generate-katina-pdf.mjs --headed",
+    "pdf:file": "node generate-katina-pdf.mjs --file katina-urls.txt",
+    "pdf:file:headed": "node generate-katina-pdf.mjs --file katina-urls.txt --headed",
     "start": "node server.mjs",
-    "dev": "node server.mjs"
+    "dev": "node server.mjs",
+    "start:headed": "node start-headed.mjs"
   },
   "dependencies": {
     "playwright": "^1.59.1"

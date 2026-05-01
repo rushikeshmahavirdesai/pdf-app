@@ -1,0 +1,178 @@
+/*
+  Copy of pdf-render.mjs → printCss (@media print). Edit pdf-render.mjs first, then mirror here.
+*/
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 12mm 24mm 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .masthead,
+  .site-header,
+  .site-nav,
+  .global-header,
+  .navigation,
+  #site-navigation,
+  .mega-menu,
+  .mobile-nav,
+  .burger,
+  .menu-toggle,
+
+  footer,
+  body > footer,
+  .site-footer,
+  .site-footer-simple,
+  [role="contentinfo"],
+  .footer-nav,
+  .global-footer,
+  .breadcrumb,
+  nav[aria-label*="breadcrumb" i],
+  nav[aria-label*="Breadcrumb" i],
+  .post-meta-nav,
+  .post-navigation-prev-next,
+
+  .share,
+  .sharing,
+  .share-bar,
+  .sharebar,
+  .share-buttons,
+  .share-icons,
+  .sharing-buttons,
+  .social-share-buttons,
+  .article-share-bar,
+  .article-share-tools,
+  .article-share-top,
+  .article-share-inline,
+  .sticky-share,
+  .floating-share,
+  .floating-social,
+  .post-share-bar,
+  .entry-share,
+  .print-button,
+  [class*="share-bar" i],
+  [class*="share-btn" i],
+  [class*="ShareButton" i],
+  [class*="SharingToolbar" i],
+  [class*="sharing-toolbar" i],
+  [class*="social-toolbar" i],
+  [data-module*="sharing" i],
+  [data-module*="breadcrumb" i],
+  [data-component*="Share" i],
+  [data-component*="share" i],
+  [aria-label*="share" i],
+  [aria-label*="Share article" i],
+  [aria-label*="social media" i],
+  iframe[src*="facebook.com/plugins/share"],
+  iframe[src*="platform.twitter"],
+
+  .addthis_toolbox,
+  .addthis-smartlayers,
+
+  .article-actions,
+  .article-buttons,
+  .bottom-share,
+  .entry-footer-buttons,
+  .article-bottom-buttons,
+  .post-footer-buttons,
+  .below-article,
+  .after-post,
+  .article-cta,
+  .pagination,
+  .pager,
+  .article-post-navigation,
+
+  .newsletter,
+  .newsletter-signup,
+  .newsletter-widget,
+  .join-our-community,
+  .signup-section,
+  [class*="signup-form" i],
+  [class*="elementor-form" i],
+  [class*="wpforms" i],
+  [class*="gform_" i],
+  iframe[src*="hsforms"],
+  iframe[src*="hubspot"],
+  [class*="signup-box" i],
+
+  #disqus_thread,
+  [id*="disqus" i],
+  #comments,
+  #respond,
+  #commentform,
+  .comment-form,
+  .comment-form-wrap,
+  .comments-area,
+  .comments-section,
+  .comment-section,
+  .comment-list,
+  .comment-respond,
+  .discussion-section,
+  .comments-wrapper,
+  [class*="disqus-thread" i],
+  [class*="comments-area" i],
+  iframe[src*="disqus"],
+  iframe[src*="disquscdn"],
+
+  #secondary,
+  #sidebar,
+  aside[class*="rail" i],
+  aside[class*="Rail" i],
+  aside[role="complementary"]:not(article aside),
+  aside[class*="sidebar" i]:not(article aside),
+  aside[class*="related" i]:not(article aside),
+  aside[class*="Related" i]:not(article aside),
+  [class*="recommended-rail" i],
+  [class*="article-recommendations" i],
+  [class*="you-might-like" i],
+  [class*="you-may-like" i],
+  [class*="read-next" i],
+  [class*="more-stories" i],
+  [class*="related-posts" i],
+  [data-zone*="recommended" i],
+
+  [style*="position: fixed"],
+  [style*="position:fixed"] {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  main,
+  article,
+  article * {
+    max-width: none !important;
+    box-sizing: border-box;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  img,
+  figure,
+  blockquote,
+  pre,
+  table {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+    max-width: 100% !important;
+  }
+
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
+  }
+}
