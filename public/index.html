@@ -20,6 +20,19 @@
         padding: 1.25rem;
         box-sizing: border-box;
       }
+      .notice {
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+        color: #78350f;
+        border-radius: 8px;
+        padding: 0.65rem 0.75rem;
+        font-size: 0.8125rem;
+        line-height: 1.45;
+        margin-bottom: 1rem;
+      }
+      .notice strong {
+        color: #451a03;
+      }
       .card {
         width: 100%;
         max-width: 28rem;
@@ -136,11 +149,15 @@
   </head>
   <body>
     <div class="card">
+      <aside class="notice" role="note">
+        <strong>katinamagazine.org:</strong> the live magazine uses bot protection. This hosted app usually cannot archive those
+        URLs—that’s expected. Use your browser&apos;s <strong>Print → Save as PDF</strong>, or run
+        <code style="background: rgba(0, 0, 0, 0.06); padding: 0.08rem 0.25rem; border-radius: 4px">npm run pdf:headed</code>
+        from the repo on your PC.
+      </aside>
       <h1>Download page as PDF</h1>
       <p class="sub">
-        Paste a <strong>public</strong> page link (https), then download the PDF. Keep this tab open while it runs. Some sites
-        (e.g. behind Cloudflare on <em>katinamagazine.org</em>) block cloud servers — use the
-        <strong>desktop command</strong> below for those pages.
+        Paste a <strong>public</strong> page link (https), then download the PDF. Works best for sites without strict bot checks.
       </p>
       <form id="f" class="row">
         <div>
@@ -208,7 +225,9 @@
         err.textContent = msg;
         err.hidden = false;
         const blocked =
-          /bot check|cloudflare|SITE_BLOCKED/i.test(msg) || msg.includes("hosted server");
+          /bot check|bot detection|cloudflare|SITE_BLOCKED/i.test(msg) ||
+          msg.includes("hosted server") ||
+          msg.includes("Katina Magazine");
         ehelp.textContent = "";
         if (!blocked) {
           ehelp.hidden = true;

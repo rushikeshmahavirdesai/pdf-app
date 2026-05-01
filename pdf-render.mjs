@@ -110,7 +110,7 @@ export async function renderUrlToPdfBuffer(page, url, opts = {}) {
 
   if (blockedByChallenge && mode === "server") {
     throw new Error(
-      "SITE_BLOCKED This page showed a bot check (often Cloudflare). It cannot be completed on a hosted server."
+      "SITE_BLOCKED This site protects its articles with automated bot detection (Katina Magazine and many news sites use this). Servers on Render cannot complete that verification—nothing is broken on your app. Options: open the URL in Chrome/Edge → Print → Save as PDF; or clone the repo on your PC and run npm run pdf:headed, pass the browser check once, then generate the PDF."
     );
   }
 

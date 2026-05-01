@@ -63,6 +63,13 @@ async function serveStatic(res, relativePath, contentType) {
   }
 }
 
+/** Collapse slashes, trim trailing slash, keep "/" for root. */
+function normalizedPath(pathnameRaw) {
+  const collapse = pathnameRaw.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
+  const trimmed = collapse.replace(/\/$/, "") || "/";
+  return trimmed;
+}
+
 const server = http.createServer(async (req, res) => {
   const host = req.headers.host ?? `localhost:${PORT}`;
   const base = `http://${host}`;
@@ -75,7 +82,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  const pathname = u.pathname.replace(/\/$/, "") || "/";
+  const pathname = normalizedPath(u.pathname || "/");
 
   if (req.method === "GET" && pathname === "/health") {
     res.writeHead(200, { "Content-Type": "text/plain" });
@@ -178,7 +185,18 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  res.writeHead(404);
+  if (pathname.startsWith("/api")) {
+    json(res, 404, {
+      error: "Not Found",
+      path: pathname,
+      hint:
+        "This response is from the Node server. Path must be exactly GET /api/pdf?url=… or POST /api/pdf." +
+        " If you deployed a Static Site instead of Docker Web Service, /api/* will never reach Node — recreate the service."
+    });
+    return;
+  }
+
+  res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
   res.end("Not found");
 });
 
