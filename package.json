@@ -1,0 +1,15 @@
+{
+  "name": "katina-pdf-exporter",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pdf": "node generate-katina-pdf.mjs",
+    "pdf:headed": "node generate-katina-pdf.mjs --headed",
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.59.1"
+  }
+}

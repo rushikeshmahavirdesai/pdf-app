@@ -1,0 +1,5 @@
+node_modules
+.git
+*.pdf
+.cursor
+**/terminals
