@@ -6,111 +6,214 @@
     <title>URL → PDF</title>
     <style>
       :root {
-        font-family: system-ui, sans-serif;
-        color: #1a1a1a;
-        background: #f4f4f5;
+        font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+        color: #18181b;
+        background: linear-gradient(160deg, #f4f4f5 0%, #e4e4e7 100%);
+        min-height: 100vh;
       }
       body {
-        max-width: 36rem;
-        margin: 3rem auto;
-        padding: 0 1rem;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem;
+        box-sizing: border-box;
+      }
+      .card {
+        width: 100%;
+        max-width: 28rem;
+        background: #fff;
+        border-radius: 12px;
+        padding: 1.5rem 1.35rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e4e4e7;
       }
       h1 {
-        font-size: 1.35rem;
-        font-weight: 600;
+        margin: 0 0 0.35rem;
+        font-size: 1.2rem;
+        font-weight: 650;
+        letter-spacing: -0.02em;
       }
-      p {
-        color: #52525b;
-        line-height: 1.5;
+      .sub {
+        margin: 0 0 1.15rem;
+        font-size: 0.875rem;
+        color: #71717a;
+        line-height: 1.45;
       }
       label {
         display: block;
-        font-size: 0.875rem;
-        font-weight: 500;
-        margin-bottom: 0.35rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #52525b;
+        margin-bottom: 0.4rem;
       }
-      input[type="url"] {
+      input[type="url"],
+      input[type="text"] {
         width: 100%;
         box-sizing: border-box;
-        padding: 0.6rem 0.65rem;
+        padding: 0.65rem 0.7rem;
         border: 1px solid #d4d4d8;
-        border-radius: 6px;
-        font-size: 1rem;
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        font-family: inherit;
+      }
+      input:focus {
+        outline: none;
+        border-color: #18181b;
+        box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.12);
+      }
+      .row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
       }
       button {
-        margin-top: 1rem;
-        padding: 0.55rem 1rem;
+        padding: 0.62rem 1rem;
         font-size: 0.9375rem;
-        font-weight: 500;
+        font-weight: 600;
         color: #fff;
         background: #18181b;
         border: none;
-        border-radius: 6px;
+        border-radius: 8px;
         cursor: pointer;
+        width: 100%;
+      }
+      button:hover:not(:disabled) {
+        background: #27272a;
       }
       button:disabled {
         opacity: 0.55;
-        cursor: wait;
+        cursor: not-allowed;
+      }
+      .hint {
+        font-size: 0.8125rem;
+        color: #a1a1aa;
+        margin-top: 0.35rem;
+      }
+      .status {
+        margin-top: 0.75rem;
+        font-size: 0.8125rem;
+        color: #52525b;
+        min-height: 1.25rem;
+      }
+      .status.working {
+        color: #2563eb;
       }
       .err {
-        margin-top: 0.85rem;
-        padding: 0.6rem;
-        border-radius: 6px;
-        font-size: 0.875rem;
+        margin-top: 0.65rem;
+        padding: 0.65rem 0.7rem;
+        border-radius: 8px;
+        font-size: 0.8125rem;
         background: #fef2f2;
-        color: #991b1b;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
         white-space: pre-wrap;
       }
     </style>
   </head>
   <body>
-    <h1>Download page as PDF</h1>
-    <p>Paste a public https link. The PDF opens in your browser or downloads depending on settings.</p>
-    <form id="f">
-      <label for="url">Page URL</label>
-      <input id="url" type="url" name="url" placeholder="https://example.com/article" required autocomplete="off" />
-      <button type="submit" id="go">Download PDF</button>
-    </form>
-    <div id="e" class="err" hidden></div>
+    <div class="card">
+      <h1>Download page as PDF</h1>
+      <p class="sub">Paste a <strong>public</strong> page link (https), then download the PDF. Keep this tab open while it runs.</p>
+      <form id="f" class="row">
+        <div>
+          <label for="url">Public URL</label>
+          <input
+            id="url"
+            type="url"
+            name="url"
+            inputmode="url"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="https://example.com/your-article"
+            required
+          />
+          <p class="hint">Must start with <code>https://</code> or <code>http://</code></p>
+        </div>
+        <div>
+          <button type="submit" id="go">Download PDF</button>
+          <p class="status" id="st" aria-live="polite"></p>
+        </div>
+      </form>
+      <div id="e" class="err" hidden></div>
+    </div>
     <script>
+      function parseFilename(contentDisposition) {
+        if (!contentDisposition) return "page.pdf";
+        const star = /filename\*=(?:UTF-8''|utf-8'')([^;\n]+)/i.exec(contentDisposition);
+        if (star) {
+          try {
+            return decodeURIComponent(star[1].trim().replace(/^"+|"+$/g, ""));
+          } catch {
+            /* fall through */
+          }
+        }
+        const q = /filename="([^"]+)"/i.exec(contentDisposition);
+        if (q) return q[1];
+        const u = /filename=([^;\n]+)/i.exec(contentDisposition);
+        if (u) return u[1].trim().replace(/^"+|"+$/g, "");
+        return "page.pdf";
+      }
+
+      function triggerDownload(blob, filename) {
+        const a = document.createElement("a");
+        const href = URL.createObjectURL(blob);
+        a.href = href;
+        a.download = filename;
+        a.rel = "noopener noreferrer";
+        document.body.appendChild(a);
+        a.click();
+        requestAnimationFrame(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(href);
+        });
+      }
+
       const form = document.getElementById("f");
       const inp = document.getElementById("url");
       const btn = document.getElementById("go");
       const err = document.getElementById("e");
+      const st = document.getElementById("st");
 
       form.addEventListener("submit", async (ev) => {
         ev.preventDefault();
         err.hidden = true;
+        st.textContent = "";
+        st.classList.remove("working");
         const url = inp.value.trim();
         if (!url) return;
         btn.disabled = true;
+        st.classList.add("working");
+        st.textContent = "Generating PDF… this can take up to a minute.";
         try {
           const q = encodeURIComponent(url);
           const r = await fetch("/api/pdf?url=" + q);
-          const cd = r.headers.get("Content-Disposition");
-          let name = "page.pdf";
-          if (cd) {
-            const m = /filename="([^"]+)"/i.exec(cd);
-            if (m) name = m[1];
-          }
+          const name = parseFilename(r.headers.get("Content-Disposition"));
           if (!r.ok) {
             const ct = r.headers.get("Content-Type") || "";
-            let msg = r.statusText;
+            let msg = r.statusText || "Request failed";
             if (ct.includes("application/json")) {
               const j = await r.json();
               msg = j.error || JSON.stringify(j);
             } else {
-              msg = await r.text();
+              const t = await r.text();
+              if (t) msg = t.slice(0, 500);
             }
             throw new Error(msg);
           }
           const blob = await r.blob();
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = name;
-          a.click();
-          URL.revokeObjectURL(a.href);
+          if (blob.size < 100) {
+            throw new Error("Unexpected empty response. Is the server running?");
+          }
+          triggerDownload(blob, name);
+          st.classList.remove("working");
+          st.textContent = "Done — check your Downloads folder.";
         } catch (ex) {
+          st.classList.remove("working");
+          st.textContent = "";
           err.textContent = String(ex.message || ex);
           err.hidden = false;
         } finally {
